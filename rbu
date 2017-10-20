@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+#
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=sh
+
+# set -x
+ME=$(basename "$0")
+
+function usage() {
+    echo ""
+    echo "Usage:"
+    echo " $ME parameters file"
+    echo " $ME [-d output_dir] [-m max_backups] <file>"
+    echo
+    echo "Options:"
+    echo " -d <dir>  The directory to write backups."
+    echo "           Default: dirname of <file>"
+    echo "           Optionally use OUT_DIR environment variable"
+    echo " -m <num>  Maximum number of backups to retain"
+    echo "           Default: 5"
+    echo "           Optionally use MAX_BACKUPS environment variable"
+    echo
+    echo " -h        display this help and exit"
+    echo
+}
+
+MAX_BACKUPS=${MAX_BACKUPS:-5}
+OUT_DIR=${OUT_DIR:-""}
+IN_FILE=""
+
+
+while getopts ":d:hm:" opt; do
+    case ${opt} in
+        d )
+            OUT_DIR="$OPTARG"
+            ;;
+        h ) usage && exit 0;
+            ;;
+        m )
+            MAX_BACKUPS="$OPTARG"
+            if [[ ! $MAX_BACKUPS =~ ^[0-9]+$ ]] ; then
+                echo "Invalid value for $opt" >&2
+                usage
+                exit 1
+            fi
+            ;;
+        \? )
+            echo "Invalid Option: -$OPTARG" 1>&2
+            usage; exit 1
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
+IN_FILE="$1"; shift;
+[ -z "$IN_FILE" ] && usage && exit 1
+
+if [ -d "$IN_FILE" ]; then
+    echo "$IN_FILE is a directory!";
+    echo "see $ME -h for usage";
+    exit 1
+elif [ ! -f "$IN_FILE" ]; then
+    stat "$IN_FILE"; # exit with stat error
+    exit 1
+fi
+
+
+# if empty, use same dir as input file
+[ -z "$OUT_DIR" ] && OUT_DIR="$(dirname "$IN_FILE")"
+
+# if dir does not exist then try to create it or exit
+[ -d "$OUT_DIR" ] || mkdir "$OUT_DIR" || exit 1
+
+
+BASENAME=$(basename "$IN_FILE")
+
+for (( i=MAX_BACKUPS-1; i>=1; i-- )); do
+    OLD="$OUT_DIR/$BASENAME.$i"
+    [ -f "$OLD" ] || continue
+
+    j=$((i + 1))
+    NEW="$OUT_DIR/$BASENAME.$j"
+
+    mv "$OLD" "$NEW"
+done
+
+NEW="$OUT_DIR/$BASENAME.1"
+cp -p "$IN_FILE" "$NEW"
+touch "$NEW"
+

@@ -4,13 +4,12 @@ jobs:
    machine: true
    steps:
      - checkout
-     # start proprietary DB using private Docker image
-     # with credentials stored in the UI
+     # login to docker with credentials stored in the UI
      - run: |
          docker login -u $DOCKER_USER -p $DOCKER_PASS
 
      # build the application container
-     - run: docker build -t blockloop/rbu:$CIRCLE_BRANCH .
+     - run: docker build -t blockloop/rbu .
 
      # deploy the container
-     - run: docker push blockloop/rbu:$CIRCLE_BRANCH
+     - run: docker push blockloop/rbu

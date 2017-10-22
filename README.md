@@ -19,7 +19,7 @@ chmod +x /usr/local/bin/rbu
 
 ## Docker
 
-```bash
+```
 docker run --rm -it blockloop/rbu -m 10 sqlite.db
 ```
 

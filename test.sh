@@ -37,8 +37,9 @@ function testShouldNotBackupIdenticalFiles() {
 	uuidgen > infile.txt
 	cp infile.txt infile.txt.1
 	rbu infile.txt > /dev/null
-	exp=infile.txt.2
-	[ -f "$exp" ] && fail "expected $exp to not exist" && return
+	[ -f infile.txt.2 ] && \
+		fail "expected infile.txt.2 to not exist" && \
+		return
 	pass
 }
 
@@ -65,23 +66,26 @@ function testShouldNotExceedMax() {
 	for _ in $(seq 3); do
 		rbu -m 2 -a infile.txt
 	done
-	exp=infile.txt.3
-	[ -f "$exp" ] && fail "expected $exp to NOT exist" && return
+	[ -f infile.txt.3 ] && \
+		fail "expected infile.txt.3 to NOT exist" && \
+		return
 	pass
 }
 
-function testShouldUseSpefiedDir() {
+function testShouldUseSpecifiedDir() {
 	uuidgen > infile.txt
 	mkdir baks
 	rbu -d baks -a infile.txt
-	exp=infile.txt.1
-	[ -f "$exp" ] && fail "expected $exp to NOT exist" && return
-	exp=baks/infile.txt.1
-	[ -f "$exp" ] && pass && return
-	fail "expected $exp to NOT exist"
+
+	[ -f infile.txt.1 ] && \
+		fail "expected infile.txt.1 to NOT exist" && \
+		return
+
+	[ -f baks/infile.txt.1 ] && pass && return
+	fail "expected baks/infile.txt.1 to NOT exist"
 }
 
-function testShouldCreateSpefiedDirIfItDoesNotExist() {
+function testShouldCreateSpecifiedDirIfItDoesNotExist() {
 	uuidgen > infile.txt
 	rbu -d baks -a infile.txt
 	[ -d "baks" ] && pass && return
@@ -91,10 +95,34 @@ function testShouldCreateSpefiedDirIfItDoesNotExist() {
 function testShouldErrorIfInfileIsDirectory() {
 	mkdir baks
 	if log="$(rbu baks &> /dev/stdout)"; then
-		fail "expected exit > code 0"
+		fail "expected exit code 1"
 	fi
 	[[ "$log" == *is\ a\ directory* ]] && pass && return
 	fail "expected '$log' to say infile is directory"
+}
+
+function testShouldErrorWhenNoFileSpecified() {
+	if log="$(rbu -m 10 &> /dev/stdout)"; then
+		fail "expected exit code 1"
+	fi
+	[[ "$log" == *Usage* ]] && pass && return
+	fail "expected '$log' to say infile is directory"
+}
+
+function testShouldMoveDotOneToDotTwo() {
+	uuidgen > infile.txt
+	uuidone="$(uuidgen | tee infile.txt.1)"
+
+	rbu infile.txt
+
+	[ ! -f "infile.txt.2" ] && \
+		fail "expected infile.txt.2 to exist" && \
+		return
+	[ "$(cat infile.txt.2)" == "$uuidone" ] && \
+		pass && \
+		return
+
+	fail "expected infile.txt.1 to have been moved to infile.txt.2"
 }
 
 function pass() {
@@ -105,7 +133,7 @@ function fail() {
 	echo -e "${RED}FAIL${NC}: $1"
 }
 
-for t in $tests; do 
+for t in $tests; do
 	pushd "$(mktemp -d -t tmp.XXXXXXXXX)" > /dev/null
 	echo -n "$t: "
 	eval "$t"

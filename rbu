@@ -80,7 +80,7 @@ BASENAME=$(basename "$INFILE")
 BACKUP="$OUT_DIR/$BASENAME.1"
 
 if [ -f "$BACKUP" ] && [ $ALWAYS_BACKUP == false ] ; then
-    if cmp "$INFILE" "$BACKUP" ; then
+    if cmp "$INFILE" "$BACKUP" &> /dev/null ; then
         echo "File is unchanged. Refusing to backup. Use the -a flag to override."
         exit 0
     fi
@@ -91,8 +91,8 @@ for (( i=MAX_BACKUPS-1; i>=1; i-- )); do
     [ -f "$OLD" ] || continue
 
     j=$((i + 1))
-    BACKUP="$OUT_DIR/$BASENAME.$j"
-    mv "$OLD" "$BACKUP"
+    MOVETO="$OUT_DIR/$BASENAME.$j"
+    mv "$OLD" "$MOVETO"
 done
 
 cp -p "$INFILE" "$BACKUP"

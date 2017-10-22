@@ -1,8 +1,18 @@
 rbu - **r**olling **b**ack**u**p
 ----
 
+[![CircleCI](https://img.shields.io/circleci/project/github/blockloop/rbu.svg)]()
+[![Docker Pulls](https://img.shields.io/docker/pulls/blockloop/rbu.svg)]()
+
 `rbu` is a small shell script I created to backup files on a rolling basis (similar to syslog). `rbu` takes an input file and copies it to `<filename>.1`. If `<filename>.1` already exists then it moves `<filename>.1` to `<filename>.2`.  It repeats this process untill a maximum number of backups (`MAX_BACKUPS` or `-m`) is reached. Once the max is reached it continues rolling the files but no longer creates new files.
 
+## Docker
+
+```bash
+docker run --rm -it blockloop/rbu -m 10 sqlite.db
+```
+
+## Usage
 
 ```
 Usage:
@@ -20,3 +30,4 @@ Options:
  -h        display this help and exit
 
 ```
+

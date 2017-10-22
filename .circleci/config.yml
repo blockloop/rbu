@@ -9,6 +9,14 @@ jobs:
       - run: apt-get update
       - run: apt-get install -y shellcheck
       - run: shellcheck rbu
+  test:
+    docker:
+      - image: debian:stretch
+    steps:
+      - checkout
+      - run: apt-get update
+      - run: apt-get install -y make uuid-runtime
+      - run: make test
   build:
     docker:
       - image: docker:17.05.0-ce-git
@@ -20,9 +28,13 @@ jobs:
       - run: docker push blockloop/rbu
 workflows:
   version: 2
-  lint-build:
+  lint-test-build:
     jobs:
       - lint
+      - test:
+          requires:
+            - lint
       - build:
           requires:
             - lint
+            - test

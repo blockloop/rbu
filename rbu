@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#
 # vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=sh
 
 # set -x
@@ -32,7 +31,7 @@ OUT_DIR=${OUT_DIR:-""}
 INFILE=""
 
 
-while getopts "a:d:hm:" opt; do
+while getopts "ad:hm:" opt; do
     case ${opt} in
         a )
             ALWAYS_BACKUP=true
@@ -61,8 +60,8 @@ INFILE="$1"; shift;
 [ -z "$INFILE" ] && usage && exit 1
 
 if [ -d "$INFILE" ]; then
-    echo "$INFILE is a directory!";
-    echo "see $ME -h for usage";
+    echo "$INFILE is a directory!" >&2;
+    usage;
     exit 1
 elif [ ! -f "$INFILE" ]; then
     stat "$INFILE"; # exit with stat error
@@ -80,9 +79,9 @@ fi
 BASENAME=$(basename "$INFILE")
 BACKUP="$OUT_DIR/$BASENAME.1"
 
-if [ $ALWAYS_BACKUP == false ]; then
+if [ -f "$BACKUP" ] && [ $ALWAYS_BACKUP == false ] ; then
     if cmp "$INFILE" "$BACKUP" ; then
-        echo "File is unchanged. Refusing to backup. Use the -a flag to override"
+        echo "File is unchanged. Refusing to backup. Use the -a flag to override."
         exit 0
     fi
 fi
@@ -93,7 +92,6 @@ for (( i=MAX_BACKUPS-1; i>=1; i-- )); do
 
     j=$((i + 1))
     BACKUP="$OUT_DIR/$BASENAME.$j"
-
     mv "$OLD" "$BACKUP"
 done
 

@@ -14,6 +14,16 @@ function finish {
 }
 trap finish EXIT
 
+# this is not exactly a test of rbu directly but ensures that the README.md has
+# the usage updated and correct
+function testShouldHaveUsageInREADME() {
+	readme="$(dirname "$(which rbu)")/README.md"
+	if [[ "$(cat "$readme")" == *"$(rbu -h)"* ]]; then
+		pass
+	else
+		fail "README.md does not contain all of 'rbu -h'"
+	fi
+}
 
 function testShouldAlwaysCreateFirstBackup() {
 	uuidgen > infile.txt

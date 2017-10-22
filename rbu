@@ -9,7 +9,7 @@ function usage() {
     echo ""
     echo "Usage:"
     echo " $ME parameters file"
-    echo " $ME [-d output_dir] [-m max_backups] <file>"
+    echo " $ME [-d output_dir] [-m max_backups] [-a] <file>"
     echo
     echo "Options:"
     echo " -d <dir>  The directory to write backups."
@@ -18,18 +18,25 @@ function usage() {
     echo " -m <num>  Maximum number of backups to retain"
     echo "           Default: 5"
     echo "           Optionally use MAX_BACKUPS environment variable"
+    echo " -a        Always perform backup regardless of change."
+    echo "           Default: false"
+    echo "           Optionally use ALWAYS_BACKUP environment variable"
     echo
     echo " -h        display this help and exit"
     echo
 }
 
 MAX_BACKUPS=${MAX_BACKUPS:-5}
+ALWAYS_BACKUP=false
 OUT_DIR=${OUT_DIR:-""}
-IN_FILE=""
+INFILE=""
 
 
-while getopts ":d:hm:" opt; do
+while getopts "a:d:hm:" opt; do
     case ${opt} in
+        a )
+            ALWAYS_BACKUP=true
+            ;;
         d )
             OUT_DIR="$OPTARG"
             ;;
@@ -44,46 +51,52 @@ while getopts ":d:hm:" opt; do
             fi
             ;;
         \? )
-            echo "Invalid Option: -$OPTARG" 1>&2
             usage; exit 1
             ;;
     esac
 done
 shift $((OPTIND -1))
 
-IN_FILE="$1"; shift;
-[ -z "$IN_FILE" ] && usage && exit 1
+INFILE="$1"; shift;
+[ -z "$INFILE" ] && usage && exit 1
 
-if [ -d "$IN_FILE" ]; then
-    echo "$IN_FILE is a directory!";
+if [ -d "$INFILE" ]; then
+    echo "$INFILE is a directory!";
     echo "see $ME -h for usage";
     exit 1
-elif [ ! -f "$IN_FILE" ]; then
-    stat "$IN_FILE"; # exit with stat error
+elif [ ! -f "$INFILE" ]; then
+    stat "$INFILE"; # exit with stat error
     exit 1
 fi
 
 
 # if empty, use same dir as input file
-[ -z "$OUT_DIR" ] && OUT_DIR="$(dirname "$IN_FILE")"
+[ -z "$OUT_DIR" ] && OUT_DIR="$(dirname "$INFILE")"
 
 # if dir does not exist then try to create it or exit
 [ -d "$OUT_DIR" ] || mkdir "$OUT_DIR" || exit 1
 
 
-BASENAME=$(basename "$IN_FILE")
+BASENAME=$(basename "$INFILE")
+BACKUP="$OUT_DIR/$BASENAME.1"
+
+if [ $ALWAYS_BACKUP == false ]; then
+    if cmp "$INFILE" "$BACKUP" ; then
+        echo "File is unchanged. Refusing to backup. Use the -a flag to override"
+        exit 0
+    fi
+fi
 
 for (( i=MAX_BACKUPS-1; i>=1; i-- )); do
     OLD="$OUT_DIR/$BASENAME.$i"
     [ -f "$OLD" ] || continue
 
     j=$((i + 1))
-    NEW="$OUT_DIR/$BASENAME.$j"
+    BACKUP="$OUT_DIR/$BASENAME.$j"
 
-    mv "$OLD" "$NEW"
+    mv "$OLD" "$BACKUP"
 done
 
-NEW="$OUT_DIR/$BASENAME.1"
-cp -p "$IN_FILE" "$NEW"
-touch "$NEW"
+cp -p "$INFILE" "$BACKUP"
+touch "$BACKUP"
 

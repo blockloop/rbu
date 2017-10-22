@@ -1,15 +1,28 @@
+---
 version: 2
 jobs:
- build:
-   machine: true
-   steps:
-     - checkout
-     # login to docker with credentials stored in the UI
-     - run: |
-         docker login -u $DOCKER_USER -p $DOCKER_PASS
-
-     # build the application container
-     - run: docker build -t blockloop/rbu .
-
-     # deploy the container
-     - run: docker push blockloop/rbu
+  lint:
+    docker:
+      - image: debian:stretch
+    steps:
+      - checkout
+      - run: apt-get update
+      - run: apt-get install -y shellcheck
+      - run: shellcheck rbu
+  build:
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker build -t blockloop/rbu .
+      - run: docker push blockloop/rbu
+workflows:
+  version: 2
+  lint-build:
+    jobs:
+      - lint
+      - build:
+          requires:
+            - lint

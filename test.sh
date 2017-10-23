@@ -6,15 +6,12 @@ RED='\033[0;31m'   # Red
 GREEN='\033[0;32m' # Green
 
 
+# all functions in this file that start with 'test' are executed
 tests="$(grep -E '^function test(.*)' test.sh | awk '{print $2}' | grep -E -o '\w+')"
 PATH=$PWD:$PATH
-pushd "$(mktemp -d -t tmp.XXXXXXXXX)" > /dev/null
-function finish {
-	popd &> /dev/null
-}
-trap finish EXIT
 
-# this is not exactly a test of rbu directly but ensures that the README.md has
+
+# this is not exactly a test of rbu but ensures that the README.md has
 # the usage updated and correct
 function testShouldHaveUsageInREADME() {
 	readme="$(dirname "$(which rbu)")/README.md"
@@ -31,6 +28,17 @@ function testShouldAlwaysCreateFirstBackup() {
 	exp=infile.txt.1
 	[ -f $exp ] && pass && return
 	fail "expected $exp"
+}
+
+function testShouldCreateAllBackups() {
+	uuidgen > infile.txt
+	for _ in $(seq 5); do rbu -a infile.txt ; done
+	for f in infile.txt.{1,2,3,4,5}; do
+		[ ! -f "$f" ] && \
+			fail "expected $f to exist" && \
+			return
+	done
+	pass
 }
 
 function testShouldNotBackupIdenticalFiles() {
